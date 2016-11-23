@@ -75,3 +75,4 @@ function testHaspMap() {
 }
 
 function testgit(){}
+function testgit2(){}
