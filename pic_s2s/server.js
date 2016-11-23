@@ -73,3 +73,5 @@ function testHaspMap() {
         console.log("testHaspMap" + k);
     });
 }
+
+function testgit(){}
