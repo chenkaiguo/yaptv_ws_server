@@ -13,6 +13,12 @@
     },
     "node-uuid/node-uuid.d.ts": {
       "commit": "55978642a28584b258e511046b9fb9d09c8a80a4"
+    },
+    "mysql/mysql.d.ts": {
+      "commit": "06412ff108713dcfc75fd7c4887e5d241187bbb4"
+    },
+    "linq/linq.d.ts": {
+      "commit": "40369139ce3199a94fb7a89233ed31c5fe07c567"
     }
   }
 }

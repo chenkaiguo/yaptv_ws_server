@@ -2,67 +2,178 @@
 /// <reference path="typings/hashmap/hashmap.d.ts" />
 /// <reference path="typings/node-uuid/node-uuid.d.ts" />
 var dbHelper = require("./mysqlHelper");
+var model = require("./model");
+var config = require("./config");
 
-var HashMap = require('hashmap');
+var hashmap = require("hashmap").HashMap;
+var LINQ = require("node-linq").LINQ;
 var WebSocketServer = require('ws').Server,
+
 
     wss = new WebSocketServer({
         port: 8181
     });
 
-var map = new HashMap();
+var userMap = new hashmap.HashMap();
 
+var channelMap = new Map();
+dbHelper.getchannels(function (data) {
+    channelMap = data;
+});
 
 wss.on('connection', function (ws) {
+    var sendStockUpdates = function (user) {
 
-    var sendStockUpdates = function (ws, id) {
-        if (ws.readyState == 1) {
-            dbHelper.selectPic(1479458519, 1479458539, 'ZheJiangFilm', function (data) {
-               ws.send(data);
+        var ws = user.ws;
+        if (ws.readyState == 1 && user.type != 1) {
+            var chl = channelMap.get(user.id);
+            var results = [];
+            chl.forEach(function (c) {
+                if (c.state == 1 && c.timer < config.maxTimer) {
+                    dbHelper.selectPic(c.stime - config.timeInterval, c.stime, c.channel, function (data) {
+                        ws.send(JSON.stringify(data));
+                        c.stime += 5;
+                        c.timer += 5;
+                    });
+
+                } else {
+                    c.state = 0;
+                }
             });
         }
     }
 
-    var clientStockUpdater = 'undefined';
 
-    ws.on('message', function (id) {
-        if (id == "null") {
-            console.log("null is not be allowed!");
+
+    ws.on('message', function (json) {
+
+        if (json === "null" || json === "") {
             return;
         }
-        if (!map.has(id)) {
-            map.set(id, ws);
-        } else {
-            ws.send("user is logined");
+
+        if (json == "channelmapupdate") {
+            syncChannelMap();
             return;
         }
-        clientStockUpdater = setInterval(function () {
-            sendStockUpdates(ws, id);
-        }, 1000);
+        try {
+            var obj = JSON.parse(json);
 
-        sendStockUpdates(ws, id);
+            var user = undefined;
+            if (obj.type == 1) {
 
+                if (isUserExists(obj.id)) {
+                    user = userMap.get(obj.id);
+                } else {
+                    user = new model.createUser(ws, obj.id, obj.type);
+                    userMap.set(user.id, user);
+                }
+
+                user.channel = obj.channel.trim();
+                user.stime = obj.stime;
+                touch(user);
+            } else {
+                if (isUserExists(obj.id)) {
+                    console.log("user is exists");
+                    //todo:user is exists
+                    return;
+                }
+                var user = new model.createUser(ws, obj.id, obj.type);
+                userMap.set(user.id, user);
+            }
+
+            if (user != undefined && user.interal == undefined) {
+                console.log("user:" + user.id + " logined");
+                user.interal = setInterval(function () {
+                    sendStockUpdates(user);
+                }, config.timeInterval * 1000);
+                sendStockUpdates(user);
+            }
+        } catch (error) {
+            console.log(error);
+            return;
+        }
     });
 
     ws.on('close', function () {
         console.log("start closing");
-        map.forEach(function (ws, k) {
-            if (ws.readyState == ws.CLOSED) {
-                map.remove(k);
+
+        userMap.forEach(function (v, k) {
+            if (v.ws.readyState == v.ws.CLOSED) {
+                if (typeof v.interal !== 'undefined') {
+                    clearInterval(v.interal);
+                }
+                console.log("user:" + v.id + " is removed");
+                userMap.remove(k);
             }
         });
-
-        if (map.count() == 0) {
-            console.log("closing:map is empty");
-            if (typeof clientStockUpdater !== 'undefined') {
-                clearInterval(clientStockUpdater);
-                dbHelper.close();
-                console.log("Server CLOSED");
-            }
+        if (userMap.count() == 0) {
+            console.log("closing:users is empty");
+            dbHelper.close();
+            console.log("Server CLOSED");
         }
 
     });
 });
+
+function touch(user) {
+    var cm = getChannelFromChannelMap(user);
+    if (cm != undefined) {
+        cm.state = 1;
+        cm.stime = user.stime;
+        cm.timer = 0;
+    }
+}
+
+function syncChannelMap() {
+    dbHelper.getchannels(function (data) {
+        data.forEach(function (v, k) {
+            var oldchannels = channelMap.get(k);
+            oldchannels.forEach(function (c) {
+                ch = new LINQ(v).SingleOrDefault(undefined, function (s) {
+                    return s.channel == c.channel;
+                })
+                if (ch != undefined) {
+                    ch.state = c.state;
+                    ch.timer = c.timer;
+                    ch.stime = c.timer;
+                }
+
+            });
+        })
+        channelMap = data;
+    });
+
+}
+
+
+function getChannelFromChannelMap(o) {
+    var result = undefined;
+    channelMap.forEach(function (v, k) {
+        var value = new LINQ(v).SingleOrDefault(undefined, function (c) {
+            return c.channel == o.channel;
+        });
+        if (value != undefined) {
+            result = value;
+        }
+    });
+    return result;
+}
+
+function isUserExists(id) {
+    userMap.forEach(function (v, k) {
+        if (v.id == id) {
+            return true;
+        }
+    });
+    return false;
+}
+
+function delChannelFromArr(user, channel) {
+    var index = user.channels.indexOf(channel);
+    if (index > -1) {
+        user.channels.splice(index, 1);
+    }
+}
 
 
 function testHaspMap() {
@@ -73,6 +184,3 @@ function testHaspMap() {
         console.log("testHaspMap" + k);
     });
 }
-
-function testgit(){}
-function testgit2(){}
