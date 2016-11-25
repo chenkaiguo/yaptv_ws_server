@@ -36,7 +36,7 @@ wss.on('connection', function (ws) {
                         if (data.length == 0) {
                             count(null, undefined);
                         } else {
-                            cont(null, data)
+                            cont(null, {channels:data,channel:c.channel})
                         }
                     });
                 } else {
@@ -50,7 +50,8 @@ wss.on('connection', function (ws) {
                         rs.push(s);
                     }
                 });
-                var json = JSON.stringify(rs);
+                var data={data:rs};
+                var json = JSON.stringify(data);
                 ws.send(json);
             })
         }

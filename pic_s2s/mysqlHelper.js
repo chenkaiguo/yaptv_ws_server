@@ -3,6 +3,7 @@
 var mysql = require('mysql');
 var util = require('util');
 var hashmap = require("hashmap").HashMap;
+var config = require("./config");
 
 var MPic = function (c, p, m) {
     var o = {};
@@ -28,7 +29,7 @@ function selectPic(st, et, channel, callback) {
                 for (var i = 0; i < results.length; i++) {
                     arr.push({
                         channel: results[i].channel,
-                        path: results[i].path,
+                        path: config.imgUrlPrefix+ results[i].path,
                         ms: results[i].ms
                     });
                 }
