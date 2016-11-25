@@ -16,7 +16,7 @@
     if (r != null) return unescape(r[2]); return null; 
     }
 
-    var ws = new WebSocket("ws://127.0.0.1:8181");//115.159.82.154
+    var ws = new WebSocket("ws:///115.159.82.154:8181");//115.159.82.154
     ws.onopen = function(e) {
         console.log('Connection to server opened');
         var userid=getQueryString("json");
