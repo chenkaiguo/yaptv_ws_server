@@ -4,7 +4,6 @@ var mysql = require('mysql');
 var util = require('util');
 var hashmap = require("hashmap").HashMap;
 
-
 var MPic = function (c, p, m) {
     var o = {};
     o.channel = c;
@@ -34,7 +33,7 @@ function selectPic(st, et, channel, callback) {
                     });
                 }
             }
-            callback(JSON.stringify(arr));
+            callback(arr);
         }
     );
 }

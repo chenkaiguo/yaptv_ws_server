@@ -7,12 +7,12 @@ var config = require("./config");
 
 var hashmap = require("hashmap").HashMap;
 var LINQ = require("node-linq").LINQ;
-var WebSocketServer = require('ws').Server,
+var WebSocketServer = require('ws').Server;
+var Thenjs = require('thenjs');
 
-
-    wss = new WebSocketServer({
-        port: 8181
-    });
+wss = new WebSocketServer({
+    port: 8181
+});
 
 var userMap = new hashmap.HashMap();
 
@@ -21,25 +21,38 @@ dbHelper.getchannels(function (data) {
     channelMap = data;
 });
 
+
 wss.on('connection', function (ws) {
     var sendStockUpdates = function (user) {
 
         var ws = user.ws;
         if (ws.readyState == 1 && user.type != 1) {
             var chl = channelMap.get(user.id);
-            var results = [];
-            chl.forEach(function (c) {
+            Thenjs.each(chl, function (cont, c) {
                 if (c.state == 1 && c.timer < config.maxTimer) {
                     dbHelper.selectPic(c.stime - config.timeInterval, c.stime, c.channel, function (data) {
-                        ws.send(JSON.stringify(data));
                         c.stime += 5;
                         c.timer += 5;
+                        if (data.length == 0) {
+                            count(null, undefined);
+                        } else {
+                            cont(null, data)
+                        }
                     });
-
                 } else {
                     c.state = 0;
+                    cont(null, undefined);
                 }
-            });
+            }).then(function (cont, result) {
+                var rs = [];
+                result.forEach(function (s) {
+                    if (s != undefined) {
+                        rs.push(s);
+                    }
+                });
+                var json = JSON.stringify(rs);
+                ws.send(json);
+            })
         }
     }
 
