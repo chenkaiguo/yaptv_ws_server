@@ -21,7 +21,6 @@ dbHelper.getchannels(function (data) {
     channelMap = data;
 });
 
-
 wss.on('connection', function (ws) {
     var sendStockUpdates = function (user) {
 
@@ -34,9 +33,12 @@ wss.on('connection', function (ws) {
                         c.stime += 5;
                         c.timer += 5;
                         if (data.length == 0) {
-                            count(null, undefined);
+                            cont(null, undefined);
                         } else {
-                            cont(null, {channels:data,channel:c.channel})
+                            cont(null, {
+                                channels: data,
+                                channel: c.channel
+                            })
                         }
                     });
                 } else {
@@ -50,7 +52,9 @@ wss.on('connection', function (ws) {
                         rs.push(s);
                     }
                 });
-                var data={data:rs};
+                var data = {
+                    data: rs
+                };
                 var json = JSON.stringify(data);
                 ws.send(json);
             })
@@ -69,8 +73,22 @@ wss.on('connection', function (ws) {
             syncChannelMap();
             return;
         }
+
         try {
             var obj = JSON.parse(json);
+
+            if (obj.hasOwnProperty("cancelChannel")) {
+                channelMap.forEach(function (v, k) {
+                    var value = new LINQ(v).SingleOrDefault(undefined, function (c) {
+                        return c.channel == obj.cancelChannel;
+                    });
+                    if (value != undefined) {
+                        value.state=0;
+                    }
+                });
+
+                return;
+            }
 
             var user = undefined;
             if (obj.type == 1) {
@@ -174,12 +192,13 @@ function getChannelFromChannelMap(o) {
 }
 
 function isUserExists(id) {
+    var result=false;
     userMap.forEach(function (v, k) {
         if (v.id == id) {
-            return true;
+            result=true;
         }
     });
-    return false;
+    return result;
 }
 
 function delChannelFromArr(user, channel) {

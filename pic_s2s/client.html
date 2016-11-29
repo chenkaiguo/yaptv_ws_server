@@ -4,10 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>WebSocket Echo Demo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="../bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
     <script src="../js/jquery-1.12.3.min.js"></script>
-    <script src="../js/jquery-1.12.3.min.js"></script>
-    <script src="../bootstrap-3.3.5/js/bootstrap.min.js"></script>
     <script>
 
    function getQueryString(name) { 
@@ -16,7 +13,7 @@
     if (r != null) return unescape(r[2]); return null; 
     }
 
-    var ws = new WebSocket("ws:///115.159.82.154:8181");//115.159.82.154
+    var ws = new WebSocket("ws:///127.0.0.1:8181");//115.159.82.154
     ws.onopen = function(e) {
         console.log('Connection to server opened');
         var userid=getQueryString("json");
@@ -25,8 +22,19 @@
    
     ws.onmessage = function (e) {
         console.log(e.data);
-        $("#pic").append(e.data+"<br/>");
+        $("#pic").html(e.data+"<br/>");
     };
+
+    function cancel(){
+        ws.send("{\"cancelChannel\":\"TVMTEST\"}");
+    }
+    function start(){
+        ws.send("{\"id\":-99999,\"type\":1,\"channel\":\"TVMTEST\",\"stime\":1480393885}");
+    }
+
+    function login(){
+        ws.send("{\"id\":30270,\"type\":0}");
+    }
 
     </script>
 </head>
@@ -37,6 +45,9 @@
             <div id="pic"> </div>
         </div>
     </div>
+    <input type="button" value="start-server-TVMTEST" onclick="start()" />
+    <input type="button" value="cancel" onclick="cancel()" />
+    <input type="button" value="login" onclick="login()"/>
 </body>
 
 </html>
