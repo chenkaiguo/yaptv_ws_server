@@ -23,10 +23,10 @@ dbHelper.getchannels(function (data) {
 
 wss.on('connection', function (ws) {
     var sendStockUpdates = function (user) {
-
         var ws = user.ws;
         if (ws.readyState == 1 && user.type != 1) {
             var chl = channelMap.get(user.id);
+            if (chl == undefined) return;
             Thenjs.each(chl, function (cont, c) {
                 if (c.state == 1 && c.timer < config.maxTimer) {
                     dbHelper.selectPic(c.stime - config.timeInterval, c.stime, c.channel, function (data) {
@@ -47,11 +47,14 @@ wss.on('connection', function (ws) {
                 }
             }).then(function (cont, result) {
                 var rs = [];
-                result.forEach(function (s) {
-                    if (s != undefined) {
-                        rs.push(s);
-                    }
-                });
+                if (result != undefined) {
+                    result.forEach(function (s) {
+                        if (s != undefined) {
+                            rs.push(s);
+                        }
+                    });
+                }
+
                 var data = {
                     data: rs
                 };
@@ -83,7 +86,7 @@ wss.on('connection', function (ws) {
                         return c.channel == obj.cancelChannel;
                     });
                     if (value != undefined) {
-                        value.state=0;
+                        value.state = 0;
                     }
                 });
 
@@ -103,6 +106,7 @@ wss.on('connection', function (ws) {
                 user.channel = obj.channel.trim();
                 user.stime = obj.stime;
                 touch(user);
+                return;
             } else {
                 if (isUserExists(obj.id)) {
                     console.log("user is exists");
@@ -192,10 +196,10 @@ function getChannelFromChannelMap(o) {
 }
 
 function isUserExists(id) {
-    var result=false;
+    var result = false;
     userMap.forEach(function (v, k) {
         if (v.id == id) {
-            result=true;
+            result = true;
         }
     });
     return result;
