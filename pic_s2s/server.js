@@ -106,11 +106,13 @@ wss.on('connection', function (ws) {
                 user.channel = obj.channel.trim();
                 user.stime = obj.stime;
                 touch(user);
+                console.log("sign:"+json);
                 return;
             } else {
                 if (isUserExists(obj.id)) {
                     console.log("user is exists");
                     //todo:user is exists
+                    ws.send("用户已经登录！");
                     return;
                 }
                 var user = new model.createUser(ws, obj.id, obj.type);
@@ -158,6 +160,18 @@ function touch(user) {
         cm.stime = user.stime;
         cm.timer = 0;
     }
+
+    sendVideo(user);
+}
+
+function sendVideo(user) {
+    var id = getUserIdByChannel(user);
+    if (id != undefined) {
+        var u = userMap.get(id);
+        if (u != undefined) {
+            u.ws.send("playvideo");
+        }
+    }
 }
 
 function syncChannelMap() {
@@ -190,6 +204,19 @@ function getChannelFromChannelMap(o) {
         });
         if (value != undefined) {
             result = value;
+        }
+    });
+    return result;
+}
+
+function getUserIdByChannel(o) {
+    var result = undefined;
+    channelMap.forEach(function (v, k) {
+        var value = new LINQ(v).SingleOrDefault(undefined, function (c) {
+            return c.channel == o.channel;
+        });
+        if (value != undefined) {
+            result = k;
         }
     });
     return result;

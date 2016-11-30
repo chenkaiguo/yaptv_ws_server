@@ -19,9 +19,20 @@
         var userid=getQueryString("json");
         ws.send(userid);
     };
-   
+    ws.onclose=function(e){
+        console.log(e);
+        console.log("socket closed");
+        alert("socket closed")
+    }
     ws.onmessage = function (e) {
         console.log(e.data);
+
+        if(e.data=="heartbeat"){return;}
+
+        if(e.data=="playvideo"){
+           myVideo=document.getElementById("video").play();
+            return;
+        }
         $("#pic").html(e.data+"<br/>");
     };
 
@@ -33,8 +44,14 @@
     }
 
     function login(){
-        ws.send("{\"id\":88888,\"type\":0}");
+        ws.send("{\"id\":13812077917,\"type\":0}");
     }
+
+varintervalId=setInterval(function(){
+    if(ws.readyState==1){
+    }
+},1000);
+
 
     </script>
 </head>
@@ -47,7 +64,10 @@
     </div>
     <input type="button" value="start-server-TVMTEST" onclick="start()" />
     <input type="button" value="cancel" onclick="cancel()" />
-    <input type="button" value="login" onclick="login()"/>
+    <input type="button" value="login" onclick="login()" />
+    <audio controls="controls" id="video">
+        <source src="file:///Users/guochenkai/Downloads/tsy.wav" />
+    </audio>
 </body>
 
 </html>
